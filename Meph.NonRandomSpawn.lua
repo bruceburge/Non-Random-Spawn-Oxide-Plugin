@@ -29,10 +29,13 @@ end
 
 
 function PLUGIN:OnSpawnPlayer ( playerclient, usecamp, avatar )
-	if (not playerclient) then return end
+	if (not playerclient) then print( self.Title .. " No playerclient, don't teleport" ) return end
 	if (usecamp) then return end
-	local userid = rust.GetUserID( playerclient.netuser )	
-	teleportPlayerToPoint(userid, self.Location)
+	--local userid = rust.GetUserID( playerclient.netuser )
+	
+    if(not self.Location) then print( self.Title .. " No spawn location set, don't teleport" ) return end	
+	print( self.Title .. " spawn location set, attempt teleport!" )
+	teleportPlayerToPoint(playerclient.netuser, self.Location)
 end	
  
  function PLUGIN:teleportPlayerToPoint( netuser, TpPos )  
@@ -62,12 +65,12 @@ end
 
 function PLUGIN:cmdSetLocation(netuser, cmd, args)
     local isAuthorized = netuser:CanAdmin() or (oxmin_Plugin and oxmin_Plugin:HasFlag(netuser, self.FLAG_nrsSetter, false))
-    if not isAuthorized then return end
+    if not isAuthorized then return end	
         local pos = netuser.playerClient.lastKnownPosition
 		self.Location["nrsSpawn"] = {}
         self.Location["nrsSpawn"].Location = pos
+		print( self.Title .. " Attempting to save spawn location" )
         self:SaveMapToFile(self.Location,self.LocationFile)
 		rust.SendChatToUser( netuser, "Spawn Location Set")
 
     end
-end
