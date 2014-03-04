@@ -8,7 +8,7 @@ function PLUGIN:Init()
     self:AddChatCommand("nrsSetLocation", self.cmdSetLocation)
 	self.LocationFile, self.Location = self:readFileToMap("nrsLocation")
     
-	if(self.Location ~= nil and self.Location.Pos ~= nil) then
+	if(self.Location ~= nil or self.Location.Pos ~= nil) then
 		print( self.Title .. "Spawn location x:"..self.Location.Pos.x.." y:"..self.Location.Pos.y.." z:"..self.Location.Pos.z)
     end
 	
