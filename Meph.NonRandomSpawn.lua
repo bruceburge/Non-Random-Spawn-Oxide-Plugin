@@ -1,15 +1,24 @@
 PLUGIN.Title = "Non Random Spawn"
 PLUGIN.Description = "Sets first time spawn to a fixed location"
-PLUGIN.Version = "0.1.0"
+PLUGIN.Version = "0.2.0"
 PLUGIN.Author = "Meph"
 
 -- Called when oxide loads or user types oxide.reload example at F1 console
 function PLUGIN:Init()
     self:AddChatCommand("nrsSetLocation", self.cmdSetLocation)
+	--attempt to load config file
 	self.LocationFile, self.Location = self:readFileToMap("nrsLocation")
-    
-	if(self.Location ~= nil or self.Location.Pos ~= nil) then
+	--check if config file had valid data structure
+	if(tablelength(self.Location) > 0 and tablelength(self.Location.Pos) == 3) then
 		print( self.Title .. "Spawn location x:"..self.Location.Pos.x.." y:"..self.Location.Pos.y.." z:"..self.Location.Pos.z)
+	else
+		--if we got a blank table back from the config loader then create the structure and save it to the config file
+		self.Location = {}
+		self.Location.Pos = {}
+		self.Location.Pos.x = 0
+		self.Location.Pos.y = 0
+		self.Location.Pos.z = 0
+		self:SaveMapToFile(self.Location,self.LocationFile)
     end
 	
 	print( self.Title .. " v" .. self.Version .. " loaded!" )
@@ -31,11 +40,6 @@ function PLUGIN:OnSpawnPlayer ( playerclient, usecamp, avatar )
 		return 
 	end
 	
-	if(self.Location == nil or self.Location.Pos == nil) then 
-		--print( self.Title .. " OnSpawnPlayer no location set") 
-		return 
-	end
-        --print( self.Title .. " Teleport!")
 	self:TeleportNetuser(playerclient.netuser, self.Location.Pos.x,self.Location.Pos.y,self.Location.Pos.z)
 end	
 
@@ -64,19 +68,15 @@ end
  -- Teleport NetUser to Specific Coordinates
 function PLUGIN:TeleportNetuser(netuser, x, y, z)
     local coords = netuser.playerClient.lastKnownPosition        
-    --print(self.Title.." old loc "..coords.x.." ,"..coords.y.." ,"..coords.z)
-    coords.x ,coords.y ,coords.z = x,y,z
-    --print(self.Title.." new loc "..coords.x.." ,"..coords.y.." ,"..coords.z)
-
---timer wrapper because without it, the teleport will kill player.    
-timer.Once( 0, function()
-    --if(self.Location ~= nil and self.Location.Pos ~= nil) then
-	--rust.SendChatToUser( netuser, self.Title .. "From location.pos x:"..self.Location.Pos.x.." y:"..self.Location.Pos.y.." z:"..self.Location.Pos.z)
-	--rust.SendChatToUser( netuser, self.Title .. "From coords x:"..coords.x.." y:"..coords.y.." z:"..coords.z)
-    --end
-        rust.ServerManagement():TeleportPlayer(netuser.playerClient.netPlayer, coords)
-		--TODO: rust.SendChatToUser( netuser,_CONFIG_._TELEPORTMESSAGE_)
-    end)    
+    coords.x ,coords.y ,coords.z = x,y,z    
+	-- make sure the values aren't default before warping
+	if(x ~= 0 and y~= 0 and z~=0) then
+		--timer wrapper because without it, the teleport will kill player.    
+		timer.Once( 0, function()
+			rust.ServerManagement():TeleportPlayer(netuser.playerClient.netPlayer, coords)
+			--TODO: rust.SendChatToUser( netuser,_CONFIG_._TELEPORTMESSAGE_)
+		end)    
+	end		
 end
  
 -- Automated Oxide help function (added to /help list)
@@ -103,5 +103,11 @@ end
 function PLUGIN:SaveMapToFile(table, file)
     file:SetText( json.encode( table ) )  
 	file:Save() 
+end
+
+function tablelength(table)
+  local count = 0
+  for _ in pairs(table) do count = count + 1 end
+  return count
 end
 
